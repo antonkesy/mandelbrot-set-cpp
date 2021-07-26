@@ -236,6 +236,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
          RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
       }
       break;
+   case WM_SIZE:
+      //reset colorRef array
+      aColref = nullptr;
+      InvalidateRect(hWnd, NULL, FALSE);
+      break;
    default:
       return DefWindowProc(hWnd, message, wParam, lParam);
    }
