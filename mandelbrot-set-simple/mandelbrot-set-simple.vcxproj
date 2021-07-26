@@ -141,12 +141,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ColorUtility.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="mandelbrot-set-simple.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ColorUtility.cpp" />
     <ClCompile Include="mandelbrot-set-simple.cpp" />
   </ItemGroup>
   <ItemGroup>
