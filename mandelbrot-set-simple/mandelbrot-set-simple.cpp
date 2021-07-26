@@ -4,6 +4,8 @@
 #include "framework.h"
 #include "mandelbrot-set-simple.h"
 
+#include "Resource.h"
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
