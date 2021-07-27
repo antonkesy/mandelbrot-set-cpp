@@ -46,7 +46,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
    free(aColref);
 
-   return (int)msg.wParam;
+   return static_cast<int>(msg.wParam);
 }
 
 
@@ -68,8 +68,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
    wcex.hInstance = hInstance;
    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDC_MANDELBROTSETSIMPLE));
    wcex.hCursor = LoadCursor(nullptr, IDC_CROSS);
-   wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-   wcex.lpszMenuName = 0;
+   wcex.hbrBackground = reinterpret_cast<HBRUSH>((COLOR_WINDOW + 1));
+   wcex.lpszMenuName = nullptr;
    wcex.lpszClassName = szWindowClass;
    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -142,7 +142,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
          if (aColref == nullptr)
          {
             //alloc colorref array for bitmap once
-            aColref = (COLORREF*)malloc(rect.bottom * rect.right * sizeof(COLORREF));
+            aColref = static_cast<COLORREF*>(malloc(rect.bottom * rect.right * sizeof(COLORREF)));
          }
 
          if (aColref != nullptr)
@@ -218,22 +218,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
       if (iNewBottom > iNewRight)
       {
          //height
-         iNewRight = (int)((double)iNewBottom / ((double)rect.bottom / rect.right));
+         iNewRight = static_cast<int>(static_cast<double>(iNewBottom) / (static_cast<double>(rect.bottom) / rect.
+            right));
          iX = lastIX + iNewRight;
       }
       else
       {
          //width
-         iNewBottom = (int)((double)iNewRight * ((double)rect.bottom / rect.right));
+         iNewBottom = static_cast<int>(static_cast<double>(iNewRight) * (static_cast<double>(rect.bottom) / rect.
+            right));
          iY = lastIY + iNewBottom;
       }
       sComplexArea = {sCN_NewTL, DoTransformationPixel2ComplexNumber(iX, iY, sComplexArea, rect)};
-      InvalidateRect(hWnd, NULL, FALSE);
+      InvalidateRect(hWnd, nullptr, FALSE);
       break;
    case WM_RBUTTONUP:
       //Reset complex area to original values
       sComplexArea = {{-2.0, 1.0}, {1.0, -1.0}};
-      InvalidateRect(hWnd, NULL, FALSE);
+      InvalidateRect(hWnd, nullptr, FALSE);
       break;
    case WM_DESTROY:
       PostQuitMessage(0);
@@ -245,13 +247,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
          rectEndPoint.x = LOWORD(lParam);
          rectEndPoint.y = HIWORD(lParam);
          eDrawState = DrawUserRect;
-         RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+         RedrawWindow(hWnd, nullptr, nullptr, RDW_INVALIDATE);
       }
       break;
    case WM_SIZE:
       //reset colorRef array
       aColref = nullptr;
-      InvalidateRect(hWnd, NULL, FALSE);
+      InvalidateRect(hWnd, nullptr, FALSE);
       break;
    default:
       return DefWindowProc(hWnd, message, wParam, lParam);
@@ -266,29 +268,29 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
    switch (message)
    {
    case WM_INITDIALOG:
-      return (INT_PTR)TRUE;
+      return TRUE;
 
    case WM_COMMAND:
       if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
       {
          EndDialog(hDlg, LOWORD(wParam));
-         return (INT_PTR)TRUE;
+         return TRUE;
       }
       break;
    }
-   return (INT_PTR)FALSE;
+   return FALSE;
 }
 
 //Loads COLORREF array with values and  calls draw bitmap
 void DrawMandelbrot(HDC hdc, RECT rect, sComplexArea_t sComplexArea)
 {
    //create AMOUNT_OF_THREADS threads
-   auto pThreads = (HANDLE*)malloc(AMOUNT_OF_THREADS * sizeof(HANDLE));
-   auto pSingleThreadData = (sDrawMandelbrotThreadData_t*)malloc(
-      AMOUNT_OF_THREADS * sizeof(sDrawMandelbrotThreadData_t));
+   auto pThreads = static_cast<HANDLE*>(malloc(AMOUNT_OF_THREADS * sizeof(HANDLE)));
+   auto pSingleThreadData = static_cast<sDrawMandelbrotThreadData_t*>(malloc(
+      AMOUNT_OF_THREADS * sizeof(sDrawMandelbrotThreadData_t)));
 
    //sanity check threads
-   if (pThreads != NULL && pSingleThreadData != NULL)
+   if (pThreads != nullptr && pSingleThreadData != nullptr)
    {
       bool bThreadsAvailable = true;
       for (unsigned int i = 0U; i < AMOUNT_OF_THREADS && bThreadsAvailable; ++i)
@@ -301,15 +303,15 @@ void DrawMandelbrot(HDC hdc, RECT rect, sComplexArea_t sComplexArea)
             cuiXStart, cuiXStop, rect, sComplexArea, hdc, aColref
          };
 
-         pThreads[i] = CreateThread(NULL, 0, ThreadDrawMandelbrot, &pSingleThreadData[i], 0, NULL);
+         pThreads[i] = CreateThread(nullptr, 0, ThreadDrawMandelbrot, &pSingleThreadData[i], 0, nullptr);
          //stops if thread is not available
-         bThreadsAvailable = pThreads[i] != NULL;
+         bThreadsAvailable = pThreads[i] != nullptr;
       }
 
       //if thread creation was successful
       if (bThreadsAvailable)
       {
-         WaitForMultipleObjects(AMOUNT_OF_THREADS, (const HANDLE*)pThreads, TRUE, INFINITE);
+         WaitForMultipleObjects(AMOUNT_OF_THREADS, pThreads, TRUE, INFINITE);
 
          for (unsigned int i = 0U; i < AMOUNT_OF_THREADS; ++i)
          {
@@ -359,12 +361,12 @@ sComplexNumber_t DoTransformationPixel2ComplexNumber(unsigned int uiX, unsigned 
 {
    sComplexNumber_t sComplexNumberRet;
    //calculate cReal
-   sComplexNumberRet.dReal = (double)uiX / rect.right *
+   sComplexNumberRet.dReal = static_cast<double>(uiX) / rect.right *
       (sComplexArea.sCNBottomRight.dReal - sComplexArea.sCNTopLeft.dReal)
       + sComplexArea.sCNTopLeft.dReal;
 
    //calculate cImg
-   sComplexNumberRet.dImg = ((double)rect.bottom - uiY) / rect.bottom *
+   sComplexNumberRet.dImg = (static_cast<double>(rect.bottom) - uiY) / rect.bottom *
       (sComplexArea.sCNTopLeft.dImg - sComplexArea.sCNBottomRight.dImg)
       + sComplexArea.sCNBottomRight.dImg;
 
@@ -406,7 +408,7 @@ double AbsComplexNumber(sComplexNumber_t sComplexNumber)
 
 DWORD WINAPI ThreadDrawMandelbrot(void* pParam)
 {
-   const sDrawMandelbrotThreadData_t csDrawData = *(sDrawMandelbrotThreadData_t*)pParam;
+   const sDrawMandelbrotThreadData_t csDrawData = *static_cast<sDrawMandelbrotThreadData_t*>(pParam);
 
    //go through x-pixels from start to stop of assigned thread 
    for (unsigned int uiX = csDrawData.uiXStart; uiX < csDrawData.uiXStop; ++uiX)
