@@ -120,13 +120,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
    static sComplexArea_t sComplexArea = {{-2.0, 1.0}, {1.0, -1.0}};
    static int iX;
    static int iY;
-   const int cLastIX = iX;
-   const int cLastIY = iY;
+   int lastIX = iX;
+   int lastIY = iY;
    static POINT rectEndPoint;
    static bool bSelectNewArea;
    static PaintStates eDrawState;
    HDC hdc;
-   static sComplexNumber_t sCN_NewTL;
+   sComplexNumber_t sCN_NewTL;
+   int iNewRight;
+   int iNewBottom;
    switch (message)
    {
    case WM_COMMAND:
@@ -160,7 +162,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                //SelectObject(hdc, GetStockObject(DC_BRUSH));
                SetDCPenColor(hdc, RGB(0xFF, 0, 0));
                //draw rect 
-               //PatBlt(hdc, iX, iY, rectEndPoint.x - iX, rectEndPoint.y - iY, PATCOPY);
                Rectangle(hdc, iX, iY, rectEndPoint.x, rectEndPoint.y);
                break;
             case ClearUserRect:
@@ -175,14 +176,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
       break;
 
    case WM_LBUTTONDOWN:
+      //start new area selection
       bSelectNewArea = true;
       iX = LOWORD(lParam);
       iY = HIWORD(lParam);
-      GetClientRect(hWnd, &rect);
-      sCN_NewTL.dReal = iX;
-      sCN_NewTL.dImg = iY;
-      //Transformation of iX,iY - store in sCN_NewTL (static)
-      sCN_NewTL = DoTransformationPixel2ComplexNumber(iX, iY, sComplexArea, rect);
       break;
 
    case WM_LBUTTONUP:
@@ -190,31 +187,47 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
       iX = LOWORD(lParam);
       iY = HIWORD(lParam);
       GetClientRect(hWnd, &rect);
-      //  sets steps equal to window aspect ratio to reduce distortion
-      if (iX > cLastIX && iY > cLastIY)
+
+      //swaps coordinates to keep orientation
+      if (iX < lastIX)
       {
-         //calc new rect
-         int iNewRight = iX - cLastIX;
-         int iNewBottom = iY - cLastIY;
-         //keep bigger rect side as picked
-         if (iNewBottom > iNewRight)
-         {
-            //height
-            iNewRight = (int)((double)iNewBottom / ((double)rect.bottom / rect.right));
-            iX = cLastIX + iNewRight;
-         }
-         else
-         {
-            //width
-            iNewBottom = (int)((double)iNewRight * ((double)rect.bottom / rect.right));
-            iY = cLastIY + iNewBottom;
-         }
-         sComplexArea = {sCN_NewTL, DoTransformationPixel2ComplexNumber(iX, iY, sComplexArea, rect)};
+         const int iTmp = lastIX;
+         lastIX = iX;
+         iX = iTmp;
+      }
+
+      if (iY < lastIY)
+      {
+         const int iTmp = lastIY;
+         lastIY = iY;
+         iY = iTmp;
+      }
+
+      //
+      sCN_NewTL.dReal = lastIX;
+      sCN_NewTL.dImg = lastIY;
+      //Transformation of iX,iY - store in sCN_NewTL
+      sCN_NewTL = DoTransformationPixel2ComplexNumber(lastIX, lastIY, sComplexArea, rect);
+      //
+
+      //  sets steps equal to window aspect ratio to reduce distortion
+      //calc new rect
+      iNewRight = iX - lastIX;
+      iNewBottom = iY - lastIY;
+      //keep bigger rect side as picked
+      if (iNewBottom > iNewRight)
+      {
+         //height
+         iNewRight = (int)((double)iNewBottom / ((double)rect.bottom / rect.right));
+         iX = lastIX + iNewRight;
       }
       else
       {
-         eDrawState = ClearUserRect;
+         //width
+         iNewBottom = (int)((double)iNewRight * ((double)rect.bottom / rect.right));
+         iY = lastIY + iNewBottom;
       }
+      sComplexArea = {sCN_NewTL, DoTransformationPixel2ComplexNumber(iX, iY, sComplexArea, rect)};
       InvalidateRect(hWnd, NULL, FALSE);
       break;
    case WM_RBUTTONUP:
@@ -222,7 +235,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
       sComplexArea = {{-2.0, 1.0}, {1.0, -1.0}};
       InvalidateRect(hWnd, NULL, FALSE);
       break;
-
    case WM_DESTROY:
       PostQuitMessage(0);
       break;
