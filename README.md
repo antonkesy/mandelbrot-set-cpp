@@ -9,4 +9,4 @@ Left mouse click down to select new area to zoom.
 Right mouse click to reset.
 
 
-![screenshot](mandelbrotset_screenshot.png)
+![screenshot](mandelbrotset_screenshot.PNG)
